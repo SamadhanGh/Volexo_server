@@ -58,28 +58,61 @@ public class AuthServiceImpl implements AuthService {
             return new String[]{accessToken, refreshToken};
         }
 
-    @Override
-    @Transactional
-    public UserDto signUp(SignUpDto signUpDto) {
-        // Check if user already exists with the provided email
-        userRepository.findByEmail(signUpDto.getEmail())
-                .ifPresent(user -> {
-                    throw new RuntimeConflictException("Cannot sign up, user already exists with email " + signUpDto.getEmail());
-                });
+//    @Override
+//    @Transactional
+//    public UserDto signUp(SignUpDto signUpDto) {
+//        // Check if user already exists with the provided email
+//        userRepository.findByEmail(signUpDto.getEmail())
+//                .ifPresent(user -> {
+//                    throw new RuntimeConflictException("Cannot sign up, user already exists with email " + signUpDto.getEmail());
+//                });
+//
+//        // Map the SignUpDto to a User entity
+//        User mappedUser = modelMapper.map(signUpDto, User.class);
+////        mappedUser.setRoles(Set.of(Role.RIDER));
+//        mappedUser.setRoles(Set.of(signUpDto.getRole()));
+//
+//        mappedUser.setPassword(passwordEncoder.encode(mappedUser.getPassword()));
+//
+//        // Save the new user and create a new rider and wallet
+//        User savedUser = userRepository.save(mappedUser);
+//        Rider rider = riderService.createNewRider(savedUser);
+//        walletService.createNewWallet(savedUser);
+//
+//        // Return the saved user as a UserDto
+//        return modelMapper.map(savedUser, UserDto.class);
+//    }
 
-        // Map the SignUpDto to a User entity
-        User mappedUser = modelMapper.map(signUpDto, User.class);
-        mappedUser.setRoles(Set.of(Role.RIDER));
-        mappedUser.setPassword(passwordEncoder.encode(mappedUser.getPassword()));
+@Override
+@Transactional
+public UserDto signUp(SignUpDto signUpDto) {
+    userRepository.findByEmail(signUpDto.getEmail())
+            .ifPresent(user -> {
+                throw new RuntimeConflictException("Cannot sign up, user already exists with email " + signUpDto.getEmail());
+            });
 
-        // Save the new user and create a new rider and wallet
-        User savedUser = userRepository.save(mappedUser);
-        Rider rider = riderService.createNewRider(savedUser);
-        walletService.createNewWallet(savedUser);
+    User mappedUser = modelMapper.map(signUpDto, User.class);
+    mappedUser.setRoles(Set.of(signUpDto.getRole()));
+    mappedUser.setPassword(passwordEncoder.encode(mappedUser.getPassword()));
 
-        // Return the saved user as a UserDto
-        return modelMapper.map(savedUser, UserDto.class);
+    User savedUser = userRepository.save(mappedUser);
+
+    if (signUpDto.getRole() == Role.RIDER) {
+        riderService.createNewRider(savedUser);
+    } else if (signUpDto.getRole() == Role.DRIVER) {
+        Driver driver = Driver.builder()
+                .user(savedUser)
+                .rating(0.0)
+                .available(true)
+                .vehicleId(null) // or handle later in onboarding
+                .build();
+        driverService.createNewDriver(driver);
     }
+
+    walletService.createNewWallet(savedUser);
+
+    return modelMapper.map(savedUser, UserDto.class);
+}
 
     @Override
     public DriverDto onboardNewDriver(Long userId, String vehicleId) {

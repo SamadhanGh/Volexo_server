@@ -31,7 +31,7 @@ public class RiderController {
     private final RatingService ratingService;
     private final RideRequestService rideRequestService;
     private final ModelMapper modelMapper;
-
+    
     /**
      * Rider requests a new ride.
      */
