@@ -1,6 +1,4 @@
----
 
-````markdown
 # 🚖 Volexo Server
 
 Volexo_server is the **backend service** for the **Volexo ride-hailing platform**, built with **Java (Spring Boot)**.  
